@@ -1,7 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
+import { Post } from './post.model';
+
 import { map } from 'rxjs/operators';
+
+import { PostsService } from './posts.service';
 
 @Component({
   selector: 'app-root',
@@ -9,27 +13,25 @@ import { map } from 'rxjs/operators';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  loadedPosts = [];
+  loadedPosts: Post[] = [];
+  isFetching = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private postsService: PostsService
+  ) {}
 
   ngOnInit() {
-    this.fetchPosts();
+
   }
 
-  onCreatePost(postData: { title: string; content: string }) {
-    // Send Http request
-    // console.log(postData);
-    this.http.post(
-      'https://http-start-46ee6-default-rtdb.firebaseio.com/posts.json',
-      postData
-    ).subscribe(responseData => {
-      console.log(responseData);
-    })
+  onCreatePost(postData: Post) {
+    this.postsService.createAndStorePost(postData);
   }
 
   onFetchPosts() {
     // Send Http request
+    this.fetchPosts();
   }
 
   onClearPosts() {
@@ -37,12 +39,24 @@ export class AppComponent implements OnInit {
   }
 
   private fetchPosts() {
-    this.http.get(
+    this.isFetching = true;
+    // below block returns this sample data
+      // -sdf34r54-sdcs-dfsdfsd
+      // title: 'dsfsd'
+      // content: 'sdfgsdf'
+    this.http.get<{ [key: string]: Post }>(
       "https://http-start-46ee6-default-rtdb.firebaseio.com/posts.json"
     )
+
+    // below block returns this sample data
+      // {
+      //   id: '  -sdf34r54-sdcs-dfsdfsd',
+      //   title: 'dfgdfsgdsfg',
+      //   content: 'fsdfdsf'
+      // }
     .pipe(
       map(responseData => {
-        const postArray = [];
+        const postArray: Post[] = [];
         for(const key in responseData) {
           postArray.push({ ...responseData[key], id: key })
         }
@@ -50,7 +64,8 @@ export class AppComponent implements OnInit {
       })
     )
     .subscribe(posts => {
-      console.log(posts);
+      this.isFetching = false;
+      this.loadedPosts = posts;
     })
   }
 }
